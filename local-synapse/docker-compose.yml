@@ -1,0 +1,122 @@
+version: '3'
+
+services:
+  synapse:
+    build:
+      context: ../
+      dockerfile: docker/Dockerfile
+    image: my-synapse:latest
+    restart: unless-stopped
+    environment:
+      - SYNAPSE_CONFIG_PATH=/data/homeserver.yaml
+    volumes:
+      - ./files:/data
+    depends_on:
+      - db
+    ports:
+      - "8008:8008"
+      - "8448:8448"
+    labels:
+      # Traefik v1 example
+      - traefik.enable=true
+      - traefik.frontend.rule=Host:my.matrix.Host
+      - traefik.port=8008
+      # Traefik v2 example
+      - traefik.enable=true
+      - traefik.http.routers.http-synapse.entryPoints=http
+      - traefik.http.routers.http-synapse.rule=Host(`my.matrix.host`)
+      - traefik.http.middlewares.https_redirect.redirectscheme.scheme=https
+      - traefik.http.middlewares.https_redirect.redirectscheme.permanent=true
+      - traefik.http.routers.http-synapse.middlewares=https_redirect
+      - traefik.http.routers.https-synapse.entryPoints=https
+      - traefik.http.routers.https-synapse.rule=Host(`my.matrix.host`)
+      - traefik.http.routers.https-synapse.service=synapse
+      - traefik.http.routers.https-synapse.tls=true
+      - traefik.http.services.synapse.loadbalancer.server.port=8008
+      - traefik.http.routers.https-synapse.tls.certResolver=le-ssl
+
+  db:
+    image: docker.io/postgres:15-alpine
+    environment:
+      - POSTGRES_USER=synapse
+      - POSTGRES_PASSWORD=changeme
+      - POSTGRES_DB=synapse
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
+    volumes:
+      - ./schemas:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  generate:
+    image: docker.io/matrixdotorg/synapse:latest
+    command: generate
+    volumes:
+      - ./files:/data
+    environment:
+      - SYNAPSE_SERVER_NAME=localhost
+      - SYNAPSE_REPORT_STATS=yes
+  
+
+
+# version: '3.8'
+
+# services:
+#   synapse:
+#     build:
+#       context: .
+#       dockerfile: Dockerfile
+#     image: my-synapse:latest
+#     restart: unless-stopped
+#     environment:
+#       - SYNAPSE_CONFIG_PATH=/data/homeserver.yaml
+#     volumes:
+#       - ./files:/data
+#     depends_on:
+#       - db
+#     ports:
+#       - "8008:8008"
+#       - "8448:8448"
+#     labels:
+#       - traefik.enable=true
+#       - traefik.frontend.rule=Host:my.matrix.host
+#       - traefik.port=8008
+#       - traefik.http.routers.http-synapse.entryPoints=http
+#       - traefik.http.routers.http-synapse.rule=Host(`my.matrix.host`)
+#       - traefik.http.middlewares.https_redirect.redirectscheme.scheme=https
+#       - traefik.http.middlewares.https_redirect.redirectscheme.permanent=true
+#       - traefik.http.routers.http-synapse.middlewares=https_redirect
+#       - traefik.http.routers.https-synapse.entryPoints=https
+#       - traefik.http.routers.https-synapse.rule=Host(`my.matrix.host`)
+#       - traefik.http.routers.https-synapse.service=synapse
+#       - traefik.http.routers.https-synapse.tls=true
+#       - traefik.http.services.synapse.loadbalancer.server.port=8008
+#       - traefik.http.routers.https-synapse.tls.certResolver=le-ssl
+
+#   db:
+#     image: postgres:15-alpine
+#     environment:
+#       - POSTGRES_USER=synapse
+#       - POSTGRES_PASSWORD=changeme
+#       - POSTGRES_DB=synapse
+#       - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
+#     volumes:
+#       - ./postgres:/var/lib/postgresql/data
+#     ports:
+#       - "5432:5432"
+
+#   generate:
+#     build:
+#       context: .
+#       dockerfile: Dockerfile
+#     image: my-synapse:latest
+#     command: >
+#       python -m synapse.app.homeserver
+#       --server-name my.matrix.host
+#       --config-path /data/homeserver.yaml
+#       --generate-config
+#       --report-stats=no
+#     volumes:
+#       - ./files:/data
+#     environment:
+#       - SYNAPSE_SERVER_NAME=my.matrix.host
+#       - SYNAPSE_REPORT_STATS=yes

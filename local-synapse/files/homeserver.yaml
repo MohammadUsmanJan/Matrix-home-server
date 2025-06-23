@@ -1,0 +1,39 @@
+server_name: "localhost"
+pid_file: /data/homeserver.pid
+listeners:
+  - port: 8008
+    tls: false
+    type: http
+    x_forwarded: true
+    resources:
+      - names: [client, federation]
+        compress: false
+
+database:
+  name: psycopg2
+  args:
+    user: synapse
+    password: changeme
+    database: synapse
+    host: db
+    cp_min: 5
+    cp_max: 10
+
+log_config: "/data/localhost.log.config"
+media_store_path: /data/media_store
+registration_shared_secret: "EAIZprLv0jsYA1zJN;74Nv0DfOmUuVjuLPmV_5CidaUxw;0-52"
+report_stats: true
+macaroon_secret_key: "90rnuzHK4hZ*Wa3R0Oo-JzIsXKnlA_Ar5LJu+To-@@V;xOGRS8"
+form_secret: ":jUOec=E&mPu3#H_qD5hoWPx:7JmfO;.sQ_pQ_79p;7Di0-xXP"
+signing_key_path: "/data/localhost.signing.key"
+trusted_key_servers:
+  - server_name: "matrix.org"
+
+
+enable_registration: true
+# registration_requires_token: false
+enable_registration_without_verification: true
+
+
+# admin_user_ids:
+#   - "@UsmanJan:localhost"
